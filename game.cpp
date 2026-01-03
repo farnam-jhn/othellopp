@@ -56,6 +56,7 @@ void initialMenu();
 void initializeBoard(int boardSize);
 void boardPrint(int boardSize, Player player);
 void proccessingInput(Player &player1,Player &player2, int boardSize);
+void gameReport(int boardSize,Player p1,Player p2);
 
 std::string timeDate();
 
@@ -272,49 +273,44 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
 
         // Determining which player should move
         while (true) {
-            if ((lastPlayer == "player2")){
-                int player1PlacablePoses = 0;
-                for (int i = 0; i < boardSize; i++){
-                    for (int j = 0; j < boardSize; j++){
-                        Location temp;
-                        temp.y = i;
-                        temp.x = j;
-                        // Check if player 1 can move anywhere
-                        if ((board[i][j] == emptySpace) &&
-                            (isPossible(player1, temp, boardSize, true))){
-                                player1PlacablePoses++;
-                        }
+            int player1PlacablePoses = 0;
+            int player2PlacablePoses = 0;
+
+            for (int i = 0; i < boardSize; i++){
+                for (int j = 0; j < boardSize; j++){
+                    Location temp;
+                    temp.y = i;
+                    temp.x = j;
+                    // Check if player 1 can move anywhere
+                    if (isPossible(player1, temp, boardSize, true)){
+                            player1PlacablePoses++;
                     }
                 }
-
-                if (player1PlacablePoses != 0){
-                    player1.playersTurn = true;
-                    player2.playersTurn = false;
-                    break;
-                }
-                else {
-                    player2.playersTurn = true;
-                    player1.playersTurn = false;
-                    std::cout << player1.name << " has no moves. \n";
-                    sleep(2);
-                    break;
-                }
-
             }
-            else if (lastPlayer == "player1") {
-                int player2PlacablePoses = 0;
-                for (int i = 0; i < boardSize; i++){
-                    for (int j = 0; j < boardSize; j++){
-                        Location temp;
-                        temp.y = i;
-                        temp.x = j;
-                        if ((board[i][j] == emptySpace) &&
-                            (isPossible(player2, temp, boardSize, true))){
-                                player2PlacablePoses++;
-                        }
+
+            for (int i = 0; i < boardSize; i++){
+                for (int j = 0; j < boardSize; j++){
+                    Location temp;
+                    temp.y = i;
+                    temp.x = j;
+                    if ((board[i][j] == emptySpace) &&
+                        (isPossible(player2, temp, boardSize, true))){
+                            player2PlacablePoses++;
                     }
                 }
+            }
 
+            // Game finished
+
+            if ((player1PlacablePoses == 0)&&
+                (player2PlacablePoses == 0)){
+                    gameReport(boardSize, player1, player2);
+                    return;
+            }
+
+
+
+            if (lastPlayer == "player1"){
                 if (player2PlacablePoses != 0){
                     player2.playersTurn = true;
                     player1.playersTurn = false;
@@ -327,8 +323,24 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
                     sleep(2);
                     break;
                 }
+            }
+
+            if (lastPlayer == "player2"){
+                if (player1PlacablePoses != 0){
+                    player1.playersTurn = true;
+                    player2.playersTurn = false;
+                    break;
+                }
+                else {
+                    player2.playersTurn = true;
+                    player1.playersTurn = false;
+                    std::cout << player1.name << " has no moves. \n";
+                    sleep(2);
+                    break;
                 }
             }
+
+        }
 
 
 
@@ -957,5 +969,5 @@ void gameReport(int boardSize,Player p1,Player p2){
         std::cout << "The game was draw.";
     }
 
-
+    sleep(4);
 }
