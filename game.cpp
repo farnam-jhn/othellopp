@@ -5,8 +5,8 @@
 #include "getchar.h" /* on unix-like systems where default conpiler is usually clang
                         this header doesen't exist, thus i vibe coded a custom getch header. */
 #include <fstream>
+#include <string>
 #include <unistd.h>
-
 
 // Structures
 
@@ -23,28 +23,43 @@ struct Piece{
 
 struct Player{
     std::string name;
-    int no; // 1 for player1 and 2 for player2
+    bool isBot = false;
     char playerColor; // b for Black and w for White.
-    bool playersTurn;
+    bool playersTurn = false;
+    int pieceCount = 0;
 };
 
 // Global variables
 
+std::string lastPlayer;
+
 // Characters
-std::string white = "○";
-std::string black = "●";
+
+std::string white = "●";
+std::string black = "○";
 std::string emptySpace = "□";
 std::string block = "■";
+
 // Game board
 
 std::string board[20][20];
+
+// Player pieces
+
+int p1PieceCount = 0;
+int p2PieceCount = 0;
+
 
 // Functions prototype
 
 void initialMenu();
 void initializeBoard(int boardSize);
-void boardPrint(int boardSize);
-void proccecingInput(Player player, int boardSize);
+void boardPrint(int boardSize, Player player);
+void proccessingInput(Player &player1,Player &player2, int boardSize);
+
+std::string timeDate();
+
+bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool justChecking = false);
 
 // Main function
 
@@ -52,11 +67,15 @@ int main(){
 
     // DEVELOPMENT BLOCK
 
-    Player someo;
+    Player someo1, someo2;
 
 
+    // Clearing the screen
+
+    system("clear");
 
     // Game Menu :
+
     while (true) {
         initialMenu();
         char chosenOpt = getch();
@@ -94,7 +113,7 @@ int main(){
 
                     // outputing the board
 
-                    boardPrint(boardSize);
+                    // boardPrint(boardSize);
 
                 }
                 else if (playerCount == '2') {
@@ -142,12 +161,16 @@ int main(){
                         player2.playerColor = 'b';
                     }
 
+                    // Determining first player
 
-                    // outputing the board
+                    if (player1.playerColor == 'b'){
+                        lastPlayer = "player2";
+                    }
+                    else {
+                        lastPlayer = "player1";
+                    }
 
-                    proccecingInput(player1, boardSize);
-
-                    // boardPrint(boardSize);
+                    proccessingInput(player1, player2, boardSize);
 
 
                 }
@@ -163,9 +186,10 @@ int main(){
                 return 0;
                 break;
             case '5':
-                someo.playerColor = 'b';
-                initializeBoard(6);
-                proccecingInput(someo, 6);
+                someo1.playerColor = 'b';
+                someo2.playerColor = 'w';
+                initializeBoard(10);
+                proccessingInput(someo1, someo2, 10);
 
             default:
                 std::cout << "ERROR. \n";
@@ -193,7 +217,7 @@ void initialMenu(){
 
 }
 
-void boardPrint(int boardSize){
+void boardPrint(int boardSize, Player player){
     system("clear");
 
     for (int i = 0; i < boardSize; i++){
@@ -205,6 +229,7 @@ void boardPrint(int boardSize){
         }
         std::cout << std::endl;
     }
+    std::cout << player.name << " to play. \n";
 }
 
 void initializeBoard(int boardSize){
@@ -225,8 +250,8 @@ void initializeBoard(int boardSize){
 
     /* Game starts with this layout in center :
 
-            ○ ●
             ● ○
+            ○ ●
 
     */
 
@@ -236,85 +261,701 @@ void initializeBoard(int boardSize){
     board[firstQuarterIndex + 1][firstQuarterIndex + 1] = white;
 }
 
-void proccecingInput(Player player, int boardSize){
+void proccessingInput(Player &player1,Player &player2, int boardSize){
 
     Location navigator;
     navigator.x = 0;
     navigator.y = 0;
 
+
     while (true){
 
-        // Placing the block
+        // Determining which player should move
+        while (true) {
+            if ((lastPlayer == "player2")){
+                int player1PlacablePoses = 0;
+                for (int i = 0; i < boardSize; i++){
+                    for (int j = 0; j < boardSize; j++){
+                        Location temp;
+                        temp.y = i;
+                        temp.x = j;
+                        // Check if player 1 can move anywhere
+                        if ((board[i][j] == emptySpace) &&
+                            (isPossible(player1, temp, boardSize, true))){
+                                player1PlacablePoses++;
+                        }
+                    }
+                }
 
-        bool isBlack = false;
-        bool isWhite = false;
+                if (player1PlacablePoses != 0){
+                    player1.playersTurn = true;
+                    player2.playersTurn = false;
+                    break;
+                }
+                else {
+                    player2.playersTurn = true;
+                    player1.playersTurn = false;
+                    std::cout << player1.name << " has no moves. \n";
+                    sleep(2);
+                    break;
+                }
 
-        // Copying unchange navigator location to place temp at it
+            }
+            else if (lastPlayer == "player1") {
+                int player2PlacablePoses = 0;
+                for (int i = 0; i < boardSize; i++){
+                    for (int j = 0; j < boardSize; j++){
+                        Location temp;
+                        temp.y = i;
+                        temp.x = j;
+                        if ((board[i][j] == emptySpace) &&
+                            (isPossible(player2, temp, boardSize, true))){
+                                player2PlacablePoses++;
+                        }
+                    }
+                }
 
-        Location blocksLastLocation;
-        blocksLastLocation.x = navigator.x;
-        blocksLastLocation.y = navigator.y;
+                if (player2PlacablePoses != 0){
+                    player2.playersTurn = true;
+                    player1.playersTurn = false;
+                    break;
+                }
+                else {
+                    player1.playersTurn = true;
+                    player2.playersTurn = false;
+                    std::cout << player2.name << " has no moves. \n";
+                    sleep(2);
+                    break;
+                }
+                }
+            }
 
-        // Storing what block is at navigator location and placing block on nav's location
 
-        std::string temp = board[navigator.y][navigator.x];
-        board[navigator.y][navigator.x] = block;
 
-        // Printing the board
+        Player &player = (player1.playersTurn) ? player1 : player2;
 
-        boardPrint(boardSize);
+        bool piecePlaced = false;
 
-        // Proccessing input
+        while (!piecePlaced){
 
-        char inputChar = getch();
+            // Placing the block
 
-        if ((navigator.y > 0) &&
-            (inputChar == 'w')){
-            navigator.y--;
+            bool isBlack = false;
+            bool isWhite = false;
+
+            // Copying unchange navigator location to place temp at it
+
+            Location blocksLastLocation;
+            blocksLastLocation.x = navigator.x;
+            blocksLastLocation.y = navigator.y;
+
+            // Storing what block is at navigator location and placing block on nav's location
+
+            std::string temp = board[navigator.y][navigator.x];
+            board[navigator.y][navigator.x] = block;
+
+            // Printing the board
+
+            boardPrint(boardSize, player);
+
+            // Proccessing input
+
+            char inputChar = getch();
+            if (inputChar == 'w'){
+                if (navigator.y > 0){
+                    navigator.y--;
+                }
+            }
+            else if (inputChar == 'a'){
+                if (navigator.x > 0){
+                    navigator.x--;
+                }
+            }
+            else if (inputChar == 's'){
+                if (navigator.y < boardSize - 1){
+                    navigator.y++;
+                }
+            }
+            else if (inputChar == 'd'){
+                if (navigator.x < boardSize - 1){
+                    navigator.x++;
+                }
+            }
+            else if (inputChar == '\n' || inputChar == '\r'){
+                board[blocksLastLocation.y][blocksLastLocation.x] = temp;
+
+                bool posibilityToPlace = isPossible(player, navigator, boardSize);
+
+                if (posibilityToPlace){
+                    if (player.playerColor == 'b') {
+                        board[navigator.y][navigator.x] = black;
+                    }
+                    else {
+                        board[navigator.y][navigator.x] = white;
+                    }
+
+                    lastPlayer = (player.name == player1.name) ? "player1" : "player2";
+                    piecePlaced = true;
+                }
+                else {
+                    system("clear");
+                    std::cout << "Invalid move. \n";
+                    sleep(1);
+                }
+            }
+            else {
+                system("clear");
+                std::cout << "Error! invalid input. \n";
+                sleep(1);
+                system("clear");
+            }
+
+            // Placing back the temp on its location
+
+            if (!piecePlaced) {
+                board[blocksLastLocation.y][blocksLastLocation.x] = temp;
+            }
+
+
         }
-        else if ((navigator.x > 0) &&
-            (inputChar == 'a')){
-            navigator.x--;
-        }
-        else if ((navigator.y < (boardSize - 1)) &&
-            (inputChar == 's')){
-            navigator.y++;
-        }
-        else if ((navigator.x < (boardSize - 1)) &&
-            (inputChar == 'd')){
-            navigator.x++;
-        }
-        else if ((player.playerColor == 'b') &&
-            (inputChar == '\n' || inputChar == '\r')){
-            isBlack = true;
-        }
-        else if ((player.playerColor == 'w') &&
-            (inputChar == '\n' || inputChar == '\r')) {
-            isWhite = true;
-        }
-        else {
-            system("clear");
-            std::cout << "Error! invalid input. \n";
-            sleep(3);
-            system("clear");
-        }
 
-        // Placing back the temp on its location
-
-        board[blocksLastLocation.y][blocksLastLocation.x] = temp;
-
-        // Proccessing "Enter"
-
-        if (isBlack) {
-            board[navigator.y][navigator.x] = black;
-        }
-        else if (isWhite) {
-            board[navigator.y][navigator.x] = white;
-        }
-
-        // Printing the board after
-
-        boardPrint(boardSize);
+        boardPrint(boardSize, player);
 
     }
+}
+
+std::string timeDate(){
+
+    /*
+       This function gets the time from system
+       and writes it to time.txt with system commands
+       after that it oppens the file, reads out the line
+       and changes the format of it.
+    */
+
+
+    system("rm -rf time.txt"); // to delete old time.txts if exist.
+    system("touch time.txt");
+    system("echo $(timedatectl | grep \"Local time\") >> time.txt");
+
+    std::ifstream file("time.txt");
+    std::string unformatedTime;
+    std::getline(file, unformatedTime);
+
+    unformatedTime.erase(0,12); // Removes "Local time: " from the start
+
+    // Removing " +0330" from the last
+
+    int length = unformatedTime.length();
+    unformatedTime.erase(length - 6, 6);
+
+    return unformatedTime;
+
+}
+
+bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool justChecking){
+
+    // This function check if it's posiible to place a peace at somewhere or not and flips the piece in between if needed.
+
+    // Checking if selected location is empty or not
+    if (board[navigator.y][navigator.x] != emptySpace){
+        return false;
+    }
+    /* We have to check in 8 directions , diagnols, vertical and horizantal */
+
+    // Determining player color
+
+    std::string opposColor;
+    std::string playerColor;
+    if (playerToPlay.playerColor == 'b'){
+        playerColor = black;
+        opposColor = white;
+    }
+    else {
+        playerColor = white;
+        opposColor = black;
+    }
+
+    // For flipping mechanism
+
+    Location tempFlip[400];
+    int toFLipCount = 0;
+
+    Location currentDirFlips[20];
+
+
+    // up right
+
+    int dx = 1, dy = -1;
+    bool sandwich = false;
+    int currentDirFlipCount = 0;
+
+    if ((navigator.y + dy >= 0 && navigator.x + dx < boardSize) &&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        // Saving oppos color location
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        // Moving to next block
+
+        dx++;
+        dy--;
+
+        while ((navigator.x + dx < boardSize) &&
+               (navigator.y + dy >= 0)) {
+
+            // This loop scans for opposite color in direction if first one was oppos color.
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            // If an element is not empty space nor player color, it's opposite color for sure, thus we have to save it in order to flip later.
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            // Moving along the direction
+            dx++;
+            dy--;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+
+            // Adding this direction flip to tempFlip inorder to flip them all at last.
+
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+
+        }
+    }
+
+
+    // down left
+
+    dx = -1;
+    dy = 1;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.y + dy < boardSize && navigator.x + dx >= 0) &&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dx--;
+        dy++;
+
+        while ((navigator.x + dx >= 0 )&&
+               (navigator.y + dy < boardSize)){
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dx--;
+            dy++;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+
+    // up left
+
+    dx = -1;
+    dy = -1;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.y + dy >= 0 && navigator.x + dx >= 0) &&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dx--;
+        dy--;
+
+        while (navigator.x + dx >= 0 && navigator.y + dy >= 0) {
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dx--;
+            dy--;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+
+    // down right
+
+    dx = 1;
+    dy = 1;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.y + dy < boardSize && navigator.x + dx < boardSize)&&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dx++;
+        dy++;
+
+        while ((navigator.x + dx < boardSize) &&
+               (navigator.y + dy < boardSize)){
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dx++;
+            dy++;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+
+    // right
+
+    dx = 1;
+    dy = 0;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.x + dx < boardSize) &&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dx++;
+
+        while (navigator.x + dx < boardSize){
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dx++;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+
+    // left
+
+    dx = -1;
+    dy = 0;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.x + dx >= 0)&&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dx--;
+
+        while (navigator.x + dx >= 0) {
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dx--;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+
+    // up
+
+    dx = 0;
+    dy = -1;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.y + dy >= 0) &&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dy--;
+
+        while (navigator.y + dy >= 0) {
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dy--;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+
+
+    // down
+
+    dx = 0;
+    dy = 1;
+    sandwich = false;
+    currentDirFlipCount = 0;
+
+    if ((navigator.y + dy < boardSize) &&
+        (board[navigator.y + dy][navigator.x + dx] == opposColor)){
+
+        currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+        currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+        currentDirFlipCount++;
+
+        dy++;
+
+        while (navigator.y + dy < boardSize) {
+
+            std::string currentPiece = board[navigator.y + dy][navigator.x + dx];
+
+            if (currentPiece == playerColor){
+                sandwich = true;
+                break;
+            }
+            else if (currentPiece == emptySpace){
+                break;
+            }
+
+            currentDirFlips[currentDirFlipCount].x = navigator.x + dx;
+            currentDirFlips[currentDirFlipCount].y = navigator.y + dy;
+            currentDirFlipCount++;
+
+            dy++;
+        }
+
+        if (sandwich) {
+            if (justChecking){
+                return true;
+            }
+            for (int k = 0; k < currentDirFlipCount; k++) {
+                tempFlip[toFLipCount].x = currentDirFlips[k].x;
+                tempFlip[toFLipCount].y = currentDirFlips[k].y;
+                toFLipCount++;
+            }
+        }
+    }
+
+    // Flipping pieces if player did a valid move.
+
+    if (toFLipCount > 0) {
+        if (!justChecking) {
+            // Player's move is valid, place the piece first.
+            board[navigator.y][navigator.x] = playerColor;
+
+            // Now flip the saved pieces.
+            for (int k = 0; k < toFLipCount; k++){
+                board[tempFlip[k].y][tempFlip[k].x] = playerColor;
+            }
+        }
+        return true;
+    }
+
+    return false;
+}
+
+void gameReport(int boardSize,Player p1,Player p2){
+
+    // This fcuntion reports the game at end of the game.
+
+    // Determining players color
+
+    std::string p1Color;
+    std::string p2Color;
+    if (p1.playerColor == 'b'){
+        p1Color = black;
+        p2Color = white;
+    }
+    else {
+        p1Color = white;
+        p2Color = black;
+    }
+
+
+    for (int i = 0; i < boardSize; i++){
+        for (int j = 0; j < boardSize; j++){
+            if (board[i][j] == p1Color) {
+                p1PieceCount++;
+            }
+            else if (board[i][j] == p2Color){
+                p2PieceCount++;
+            }
+        }
+    }
+
+    // Reporting
+
+    std::cout << "Game finished. \n";
+    sleep(1);
+    std::cout << p1.name << "\'s piece count : " << p1PieceCount << std::endl;
+    std::cout << p2.name << "\'s piece count : " << p2PieceCount << std::endl;
+
+    // Determining winner
+
+    if (p1PieceCount > p2PieceCount){
+        std::cout << p1.name << " won !";
+    }
+    else if (p2PieceCount > p1PieceCount){
+        std::cout << p2.name << " won !";
+    }
+    else {
+        std::cout << "The game was draw.";
+    }
+
+
 }
