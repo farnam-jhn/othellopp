@@ -1,4 +1,4 @@
-:/*
+/*
  * Copyright (C) 2026 Farnam Jahangard
  * 
  * This program is free software: you can redistribute it and/or modify
