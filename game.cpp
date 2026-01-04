@@ -6,7 +6,9 @@
                         this header doesen't exist, thus i vibe coded a custom getch header. */
 #include <fstream>
 #include <string>
-#include <unistd.h>
+#include <unistd.h> // for sleep function
+#include <ctime> // To get system time
+// #include <chrono>
 
 // Structures
 
@@ -58,6 +60,8 @@ void boardPrint(int boardSize, Player player);
 void proccessingInput(Player &player1,Player &player2, int boardSize);
 void gameReport(int boardSize,Player p1,Player p2);
 
+Location bot(int boardSize, Player bot);
+
 std::string timeDate();
 
 bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool justChecking = false);
@@ -65,6 +69,10 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
 // Main function
 
 int main(){
+
+    // For random number
+
+    srand(static_cast<unsigned int>(time(nullptr)));
 
     // DEVELOPMENT BLOCK
 
@@ -99,10 +107,18 @@ int main(){
 
                 if (playerCount == '1'){
                     // asking for board size
+
                     int boardSize;
                     std::cout << "Enter your board size. (maximum 20) \n";
                     std::cin >> boardSize;
-
+                    while (boardSize <= 4){
+                        std::cout << "Board size should be greater than 4. Please enter your board size again. (minimum 4)";
+                        std::cin >> boardSize;
+                    }
+                    while (boardSize > 20){
+                        std::cout << "Board size should be less than 20. Please enter your board size again. (maximum 20)";
+                        std::cin >> boardSize;
+                    }
                     while (boardSize % 2 == 1){
                         std::cout << "Board size can only be even. Please enter your board size again. (maximum 20)";
                         std::cin >> boardSize;
@@ -112,17 +128,57 @@ int main(){
 
                     initializeBoard(boardSize);
 
-                    // outputing the board
+                    // Determining the players.
+
+                    Player player, bot;
+                    bot.isBot = true;
+
+                    // Determining first player name and color
+
+                    std::cout << "Enter your name : \n";
+                    std::cin >> player.name;
+
+                    std::cout << "Enter your color (b for Black, w for White): \n";
+                    player.playerColor = getch();
+                    std::cout << player.playerColor << std::endl;
+
+                    if (player.playerColor == 'b'){
+                        bot.playerColor = 'w';
+                    }
+                    else {
+                        bot.playerColor = 'b';
+                    }
+
+                    bot.name = "Bot";
+
+                    // Determining first player
+
+                    if (player.playerColor == 'b'){
+                        lastPlayer = "player2";
+                    }
+                    else {
+                        lastPlayer = "player1";
+                    }
+
+                    proccessingInput(player, bot, boardSize);
 
                     // boardPrint(boardSize);
 
                 }
                 else if (playerCount == '2') {
                     // asking for board size
+
                     int boardSize;
                     std::cout << "Enter your board size. (maximum 20) \n";
                     std::cin >> boardSize;
-
+                    while (boardSize <= 4){
+                        std::cout << "Board size should be greater than 4. Please enter your board size again. (minimum 4)";
+                        std::cin >> boardSize;
+                    }
+                    while (boardSize > 20){
+                        std::cout << "Board size should be less than 20. Please enter your board size again. (maximum 20)";
+                        std::cin >> boardSize;
+                    }
                     while (boardSize % 2 == 1){
                         std::cout << "Board size can only be even. Please enter your board size again. (maximum 20)";
                         std::cin >> boardSize;
@@ -144,6 +200,8 @@ int main(){
 
                     std::cout << "Enter first player's color (b for Black, w for White): \n";
                     player1.playerColor = getch();
+
+                    std::cout << player1.playerColor << std::endl;
 
                     while ((player1.playerColor != 'b') && (player1.playerColor != 'w')) {
                         std::cout << "Enter a valid color. \n";
@@ -308,7 +366,7 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
                     return;
             }
 
-
+            // If not finished determinig the player
 
             if (lastPlayer == "player1"){
                 if (player2PlacablePoses != 0){
@@ -372,60 +430,81 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
 
             // Proccessing input
 
-            char inputChar = getch();
-            if (inputChar == 'w'){
-                if (navigator.y > 0){
-                    navigator.y--;
+            if (!player.isBot){
+                char inputChar = getch();
+                if (inputChar == 'w'){
+                    if (navigator.y > 0){
+                        navigator.y--;
+                    }
                 }
-            }
-            else if (inputChar == 'a'){
-                if (navigator.x > 0){
-                    navigator.x--;
+                else if (inputChar == 'a'){
+                    if (navigator.x > 0){
+                        navigator.x--;
+                    }
                 }
-            }
-            else if (inputChar == 's'){
-                if (navigator.y < boardSize - 1){
-                    navigator.y++;
+                else if (inputChar == 's'){
+                    if (navigator.y < boardSize - 1){
+                        navigator.y++;
+                    }
                 }
-            }
-            else if (inputChar == 'd'){
-                if (navigator.x < boardSize - 1){
-                    navigator.x++;
+                else if (inputChar == 'd'){
+                    if (navigator.x < boardSize - 1){
+                        navigator.x++;
+                    }
                 }
-            }
-            else if (inputChar == '\n' || inputChar == '\r'){
-                board[blocksLastLocation.y][blocksLastLocation.x] = temp;
+                else if (inputChar == '\n' || inputChar == '\r'){
+                    board[blocksLastLocation.y][blocksLastLocation.x] = temp;
 
-                bool posibilityToPlace = isPossible(player, navigator, boardSize);
+                    bool posibilityToPlace = isPossible(player, navigator, boardSize);
 
-                if (posibilityToPlace){
-                    if (player.playerColor == 'b') {
-                        board[navigator.y][navigator.x] = black;
+                    if (posibilityToPlace){
+                        if (player.playerColor == 'b') {
+                            board[navigator.y][navigator.x] = black;
+                        }
+                        else {
+                            board[navigator.y][navigator.x] = white;
+                        }
+
+                        lastPlayer = (player.name == player1.name) ? "player1" : "player2";
+                        piecePlaced = true;
                     }
                     else {
-                        board[navigator.y][navigator.x] = white;
+                        system("clear");
+                        std::cout << "Invalid move. \n";
+                        sleep(1);
                     }
-
-                    lastPlayer = (player.name == player1.name) ? "player1" : "player2";
-                    piecePlaced = true;
                 }
                 else {
                     system("clear");
-                    std::cout << "Invalid move. \n";
+                    std::cout << "Error! invalid input. \n";
                     sleep(1);
+                    system("clear");
+                }
+
+                // Placing back the temp on its location
+
+                if (!piecePlaced) {
+                    board[blocksLastLocation.y][blocksLastLocation.x] = temp;
                 }
             }
             else {
-                system("clear");
-                std::cout << "Error! invalid input. \n";
-                sleep(1);
-                system("clear");
-            }
 
-            // Placing back the temp on its location
+                // Storing navigator value
 
-            if (!piecePlaced) {
                 board[blocksLastLocation.y][blocksLastLocation.x] = temp;
+
+                // Getting the bot move and executing it
+
+                Location botLocation = bot(boardSize, player);
+
+                // Placing and flipping the pieces
+
+                usleep(500000); // bot calculates its placement too fast , in order to make it easier for player to understand i put this command here so it looks like bot is thinking
+
+                isPossible(player, botLocation, boardSize);
+
+                piecePlaced = true;
+                lastPlayer = (player.name == player1.name) ? "player1" : "player2";
             }
 
 
@@ -436,33 +515,15 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
     }
 }
 
-std::string timeDate(){
 
-    /*
-       This function gets the time from system
-       and writes it to time.txt with system commands
-       after that it oppens the file, reads out the line
-       and changes the format of it.
-    */
+std::string timeDate() {
+    std::time_t now = std::time(nullptr);
+    std::string timeStr = std::ctime(&now);
 
+    // Remove \n from end
+    timeStr.erase(timeStr.length() - 1);
 
-    system("rm -rf time.txt"); // to delete old time.txts if exist.
-    system("touch time.txt");
-    system("echo $(timedatectl | grep \"Local time\") >> time.txt");
-
-    std::ifstream file("time.txt");
-    std::string unformatedTime;
-    std::getline(file, unformatedTime);
-
-    unformatedTime.erase(0,12); // Removes "Local time: " from the start
-
-    // Removing " +0330" from the last
-
-    int length = unformatedTime.length();
-    unformatedTime.erase(length - 6, 6);
-
-    return unformatedTime;
-
+    return timeStr;
 }
 
 bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool justChecking){
@@ -938,6 +999,8 @@ void gameReport(int boardSize,Player p1,Player p2){
         p2Color = black;
     }
 
+    p1PieceCount = 0;
+    p2PieceCount = 0;
 
     for (int i = 0; i < boardSize; i++){
         for (int j = 0; j < boardSize; j++){
@@ -952,6 +1015,8 @@ void gameReport(int boardSize,Player p1,Player p2){
 
     // Reporting
 
+    system("clear");
+
     std::cout << "Game finished. \n";
     sleep(1);
     std::cout << p1.name << "\'s piece count : " << p1PieceCount << std::endl;
@@ -960,14 +1025,39 @@ void gameReport(int boardSize,Player p1,Player p2){
     // Determining winner
 
     if (p1PieceCount > p2PieceCount){
-        std::cout << p1.name << " won !";
+        std::cout << p1.name << " won ! \n";
     }
     else if (p2PieceCount > p1PieceCount){
-        std::cout << p2.name << " won !";
+        std::cout << p2.name << " won ! \n";
     }
     else {
-        std::cout << "The game was draw.";
+        std::cout << "The game was draw. \n";
     }
 
     sleep(4);
+    system("clear");
+}
+
+Location bot(int boardSize, Player bot){
+    Location possiblePlacements[400];
+    int possiblePlacementsCount = 0;
+    Location tempBlock;
+    for (int i = 0; i < boardSize; i++){
+        for (int j = 0; j < boardSize; j++){
+            tempBlock.x = j;
+            tempBlock.y = i;
+            if (isPossible(bot, tempBlock, boardSize, true)){
+                possiblePlacements[possiblePlacementsCount].x = tempBlock.x;
+                possiblePlacements[possiblePlacementsCount].y = tempBlock.y;
+                possiblePlacementsCount++;
+            }
+        }
+    }
+
+    // Choosing the block randomally
+
+    int randBlock = rand() % possiblePlacementsCount;
+
+    return possiblePlacements[randBlock];
+
 }
