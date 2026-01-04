@@ -1,10 +1,12 @@
 // Headers
 
 #include <cstdlib>
+#include <ios>
 #include <iostream>
 #include "getchar.h" /* on unix-like systems where default conpiler is usually clang
                         this header doesen't exist, thus i vibe coded a custom getch header. */
 #include <fstream>
+#include <ostream>
 #include <string>
 #include <unistd.h> // for sleep function
 #include <ctime> // To get system time
@@ -51,6 +53,9 @@ std::string board[20][20];
 int p1PieceCount = 0;
 int p2PieceCount = 0;
 
+// Time and date
+
+std::string timeAndDate;
 
 // Functions prototype
 
@@ -59,6 +64,7 @@ void initializeBoard(int boardSize);
 void boardPrint(int boardSize, Player player);
 void proccessingInput(Player &player1,Player &player2, int boardSize);
 void gameReport(int boardSize,Player p1,Player p2);
+void gameHistory();
 
 Location bot(int boardSize, Player bot);
 
@@ -104,6 +110,8 @@ int main(){
 
                 char playerCount;
                 playerCount = getch();
+
+                // SINGLE PLAYER
 
                 if (playerCount == '1'){
                     // asking for board size
@@ -165,6 +173,9 @@ int main(){
                     // boardPrint(boardSize);
 
                 }
+
+                // MULTIPLAYER
+
                 else if (playerCount == '2') {
                     // asking for board size
 
@@ -236,20 +247,34 @@ int main(){
 
                 break;
             case '2':
-            // todo
+
+                system("clear");
+
+                // Telling player what to do
+
+                std::cout << "Othello is a simple board game. \n"
+                          << "  Game rules : \n \n"
+                          << "    The game starts with four pieces at the center and each player has a color; \n"
+                          << "    players can place piece in a place if this two conditions are met : \n \n"
+                          << "      1. Player's piece should at least bound one of the opponent pieces (without space and player's own piece in the middle)\n"
+                          << "      2. Player's selected location should be empty. \n \n"
+                          << "    Game finishes when there is no legal move left and the player with more pieces on the board wins.\n \n"
+                          << "  How to play : \n \n"
+                          << "    You can navigate through the board with W A S D keys \n"
+                          << "    and you can place a block by hitting enter when navigator is at the desired location. \n \n"
+                          << "PRESS ANY KEY TO RETURN TO THE MAIN MENU. \n";
+
+                getch();
+
                 break;
             case '3':
-            // todo
+                gameHistory();
+                std::cout << std::endl << "PRESS ANY KEY TO RETURN TO THE MAIN MENU. \n";
+                getch();
                 break;
             case '4':
                 return 0;
                 break;
-            case '5':
-                someo1.playerColor = 'b';
-                someo2.playerColor = 'w';
-                initializeBoard(10);
-                proccessingInput(someo1, someo2, 10);
-
             default:
                 std::cout << "ERROR. \n";
                 system("clear");
@@ -266,6 +291,8 @@ int main(){
 void initialMenu(){
 
     // This function outputs the game menu
+
+    system("clear");
 
     std::cout << "Choose your option : \n"
               << "1. New Game \n"
@@ -318,6 +345,11 @@ void initializeBoard(int boardSize){
     board[firstQuarterIndex + 1][firstQuarterIndex] = black;
     board[firstQuarterIndex][firstQuarterIndex + 1] = black;
     board[firstQuarterIndex + 1][firstQuarterIndex + 1] = white;
+
+    // Getting the start time
+
+    timeAndDate = timeDate();
+
 }
 
 void proccessingInput(Player &player1,Player &player2, int boardSize){
@@ -514,7 +546,6 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
 
     }
 }
-
 
 std::string timeDate() {
     std::time_t now = std::time(nullptr);
@@ -1024,15 +1055,47 @@ void gameReport(int boardSize,Player p1,Player p2){
 
     // Determining winner
 
+    std::string result;
+
     if (p1PieceCount > p2PieceCount){
-        std::cout << p1.name << " won ! \n";
+        result = p1.name + " won.";
     }
     else if (p2PieceCount > p1PieceCount){
-        std::cout << p2.name << " won ! \n";
+        result = p2.name + " won.";
     }
     else {
-        std::cout << "The game was draw. \n";
+        result = "Draw.";
     }
+
+    std::cout << result;
+
+    // Saving into game history
+
+    std::ofstream file("history.txt", std::ios::app);
+
+    std::string firstPlayerColor = (p1.playerColor == 'b')? "Black" : "White";
+    std::string secondPlayerColor = (p2.playerColor == 'b')? "Black" : "White";
+
+    if (p2.isBot){
+        file << std::endl
+             << "   Game date : " << timeAndDate << std::endl
+             << "   Player's name and color : " << p1.name << ", " << firstPlayerColor << std::endl
+             << "   Player's piece count : " << p1PieceCount << std::endl
+             << "   Bot's piece count : " << p2PieceCount << std::endl
+             << "   Result : " << result << std::endl;
+    }
+    else {
+        file << std::endl
+             << "   Game date : " << timeAndDate << std::endl
+             << "   First player name and color : " << p1.name << ", " << firstPlayerColor << std::endl
+             << "   Second player name and color : " << p2.name << ", " << secondPlayerColor << std::endl
+             << "   First player piece count : " << p1PieceCount << std::endl
+             << "   Second player piece count : " << p2PieceCount << std::endl
+             << "   Result : " << result << std::endl;
+    }
+
+    file.close();
+
 
     sleep(4);
     system("clear");
@@ -1059,5 +1122,20 @@ Location bot(int boardSize, Player bot){
     int randBlock = rand() % possiblePlacementsCount;
 
     return possiblePlacements[randBlock];
+
+}
+
+void gameHistory(){
+
+    system("clear");
+
+    std::ifstream file("history.txt");
+    std::string line;
+
+    while (std::getline(file, line)) {
+        std::cout << line << std::endl;
+    }
+
+    file.close();
 
 }
