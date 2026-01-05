@@ -10,20 +10,25 @@ You can download pre compiled binary version from [Releases page](https://github
 ## Build instruction
 
 Alternatively you can build the game from source,
-in UNIX-like systems (e.g. Linux, macOS) you just need to copy and paste this command :
+you just need to copy and paste this command (unix like systems):
 ```bash
-g++ game.cpp -o othello
+g++ game-unix-like.cpp -o othello
+```
+or this one for windows (.exe extension needed for launch from file manager):
+```powershell
+g++ game-windows.cpp -o othello.exe
 ```
 and in order to run the game you can launch it with this command :
 
 ```bash
 ./othello
 ```
+or in windows :
+```powershell
+.\othello.exe
+```
 
 
-## Windows support 
-
-Windows support is still under development
 
 ## License
 

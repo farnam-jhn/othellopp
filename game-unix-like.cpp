@@ -1,16 +1,16 @@
 /*
  * Copyright (C) 2026 Farnam Jahangard
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -61,6 +61,7 @@ std::string white = "●";
 std::string black = "○";
 std::string emptySpace = "□";
 std::string block = "■";
+std::string legalMoveChar = "✕";
 
 // Game board
 
@@ -83,6 +84,7 @@ void boardPrint(int boardSize, Player player);
 void proccessingInput(Player &player1,Player &player2, int boardSize);
 void gameReport(int boardSize,Player p1,Player p2);
 void gameHistory();
+void legalMove(int boardSize, Player player);
 
 Location bot(int boardSize, Player bot);
 
@@ -401,7 +403,7 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
                     Location temp;
                     temp.y = i;
                     temp.x = j;
-                    if ((board[i][j] == emptySpace) &&
+                    if ((board[i][j] == emptySpace || board[i][j] == legalMoveChar) &&
                         (isPossible(player2, temp, boardSize, true))){
                             player2PlacablePoses++;
                     }
@@ -458,10 +460,11 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
 
         while (!piecePlaced){
 
-            // Placing the block
+            // suggesting legal moves
 
-            bool isBlack = false;
-            bool isWhite = false;
+            legalMove(boardSize, player);
+
+            // Placing the block
 
             // Copying unchange navigator location to place temp at it
 
@@ -560,6 +563,16 @@ void proccessingInput(Player &player1,Player &player2, int boardSize){
 
         }
 
+        // cleaning legal move marks before printing the board
+
+        for (int i = 0; i < boardSize; i++){
+            for (int j = 0; j < boardSize; j++){
+                if (board[i][j] == legalMoveChar){
+                    board[i][j] = emptySpace;
+                }
+            }
+        }
+
         boardPrint(boardSize, player);
 
     }
@@ -580,7 +593,8 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
     // This function check if it's posiible to place a peace at somewhere or not and flips the piece in between if needed.
 
     // Checking if selected location is empty or not
-    if (board[navigator.y][navigator.x] != emptySpace){
+    if (board[navigator.y][navigator.x] == black ||
+        board[navigator.y][navigator.x] == white){
         return false;
     }
     /* We have to check in 8 directions , diagnols, vertical and horizantal */
@@ -637,7 +651,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -695,7 +709,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -745,7 +759,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -796,7 +810,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -845,7 +859,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -893,7 +907,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -941,7 +955,7 @@ bool isPossible(Player &playerToPlay, Location navigator, int boardSize, bool ju
                 sandwich = true;
                 break;
             }
-            else if (currentPiece == emptySpace){
+            else if (currentPiece == emptySpace || currentPiece == legalMoveChar){
                 break;
             }
 
@@ -1081,11 +1095,13 @@ void gameReport(int boardSize,Player p1,Player p2){
     else if (p2PieceCount > p1PieceCount){
         result = p2.name + " won.";
     }
-    else {
+    else{
         result = "Draw.";
     }
 
-    std::cout << result;
+    std::cout << result << std::endl;
+
+    sleep(1);
 
     // Saving into game history
 
@@ -1155,5 +1171,24 @@ void gameHistory(){
     }
 
     file.close();
+
+}
+
+void legalMove(int boardSize, Player player){
+
+    if (player.isBot){
+        return;
+    }
+
+    for (int i = 0 ; i < boardSize; i++){
+        for (int j = 0 ; j < boardSize; j++){
+            Location tempNav;
+            tempNav.x = j;
+            tempNav.y = i;
+            if (isPossible(player, tempNav, boardSize, true)){
+                board[i][j] = legalMoveChar;
+            }
+        }
+    }
 
 }
